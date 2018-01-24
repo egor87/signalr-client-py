@@ -9,6 +9,7 @@ else:
     from urllib.parse import urlparse, urlunparse
 
 from websocket import create_connection
+from websocket._exceptions import WebSocketException
 from ._transport import Transport
 
 
@@ -32,15 +33,15 @@ class WebSocketsTransport(Transport):
     def start(self):
         ws_url = self.__get_ws_url_from(self._get_url('connect'))
 
-        self.ws = create_connection(ws_url,
-                                    header=self.__get_headers(),
-                                    cookie=self.__get_cookie_str(),
-                                    enable_multithread=True)
-        self._session.get(self._get_url('start'))
+        self.init_connection(ws_url)
 
         def _receive():
-            for notification in self.ws:
-                self._handle_notification(notification)
+            while True:
+                try:
+                    for notification in self.ws:
+                        self._handle_notification(notification)
+                except WebSocketException:
+                    self.init_connection(ws_url)
 
         return _receive
 
@@ -53,6 +54,13 @@ class WebSocketsTransport(Transport):
 
     def accept(self, negotiate_data):
         return bool(negotiate_data['TryWebSockets'])
+    
+    def init_connection(self, ws_url):
+        self.ws = create_connection(ws_url,
+                                    header=self.__get_headers(),
+                                    cookie=self.__get_cookie_str(),
+                                    enable_multithread=True)
+        self._session.get(self._get_url('start'))
 
     class HeadersLoader(object):
         def __init__(self, headers):
