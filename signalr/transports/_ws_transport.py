@@ -40,7 +40,9 @@ class WebSocketsTransport(Transport):
                 try:
                     for notification in self.ws:
                         self._handle_notification(notification)
+                # websocket._exceptions.WebSocketConnectionClosedException: Connection is already closed
                 except WebSocketException:
+                    gevent.sleep(10)
                     self.init_connection(ws_url)
 
         return _receive
