@@ -10,6 +10,10 @@ else:
 import gevent
 
 
+class TransportException(Exception):
+    pass
+
+
 class Transport:
     def __init__(self, session, connection):
         self._session = session

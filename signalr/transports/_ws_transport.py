@@ -10,14 +10,18 @@ else:
 
 from websocket import create_connection
 from websocket._exceptions import WebSocketException
-from ._transport import Transport
+from ._transport import Transport, TransportException
 
 
 class WebSocketsTransport(Transport):
+    
+    max_connect_attempts = 10
+    
     def __init__(self, session, connection):
         Transport.__init__(self, session, connection)
         self.ws = None
         self.__requests = {}
+        self.connect_attempts = 0
 
     def _get_name(self):
         return 'webSockets'
@@ -58,11 +62,20 @@ class WebSocketsTransport(Transport):
         return bool(negotiate_data['TryWebSockets'])
     
     def init_connection(self, ws_url):
-        self.ws = create_connection(ws_url,
-                                    header=self.__get_headers(),
-                                    cookie=self.__get_cookie_str(),
-                                    enable_multithread=True)
-        self._session.get(self._get_url('start'))
+        if self.connect_attempts >= self.max_connect_attempts:
+            raise TransportException('Ws max connect attempts {0} exceeded'.format(self.max_connect_attempts))
+        try:
+            self.ws = create_connection(ws_url,
+                                        header=self.__get_headers(),
+                                        cookie=self.__get_cookie_str(),
+                                        enable_multithread=True)
+            self._session.get(self._get_url('start'))
+            self.connect_attempts = 0
+        except WebSocketException:
+            self.connect_attempts += 1
+            gevent.sleep(15)
+            return self.init_connection()
+            
 
     class HeadersLoader(object):
         def __init__(self, headers):
