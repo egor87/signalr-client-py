@@ -74,7 +74,7 @@ class WebSocketsTransport(Transport):
         except WebSocketException:
             self.connect_attempts += 1
             gevent.sleep(15)
-            return self.init_connection()
+            return self.init_connection(ws_url)
             
 
     class HeadersLoader(object):
