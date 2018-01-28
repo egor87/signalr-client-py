@@ -9,7 +9,6 @@ else:
     from urllib.parse import urlparse, urlunparse
 
 from websocket import create_connection
-from websocket._exceptions import WebSocketException
 from ._transport import Transport, TransportException
 
 
@@ -45,7 +44,7 @@ class WebSocketsTransport(Transport):
                     for notification in self.ws:
                         self._handle_notification(notification)
                 # websocket._exceptions.WebSocketConnectionClosedException: Connection is already closed
-                except WebSocketException:
+                except Exception:
                     gevent.sleep(10)
                     self.init_connection(ws_url)
 
@@ -71,7 +70,7 @@ class WebSocketsTransport(Transport):
                                         enable_multithread=True)
             self._session.get(self._get_url('start'))
             self.connect_attempts = 0
-        except WebSocketException:
+        except Exception:
             self.connect_attempts += 1
             gevent.sleep(15)
             return self.init_connection(ws_url)
